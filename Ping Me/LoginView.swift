@@ -11,30 +11,15 @@ import FirebaseAuth
 import FirebaseStorage
 import FirebaseFirestore
 
-
-class FirebaseManager: NSObject {
-    let auth: Auth
-    let storage: Storage
-    let firestore: Firestore
-    
-    static let shared = FirebaseManager()
-    override init() {
-        FirebaseApp.configure()
-        self.auth = Auth.auth()
-        self.storage = Storage.storage()
-        self.firestore = Firestore.firestore()
-        super.init()
-    }
-}
-
-
 struct LoginView: View {
-    @State var isLoginMode = false
-    @State var email = ""
-    @State var password = ""
-    @State var fname = ""
-    @State var lname = ""
-    @State var shouldShowImagePicker = false
+    let didCompleteLoginProcess: () -> ()
+    
+    @State private var isLoginMode = false
+    @State private var email = ""
+    @State private var password = ""
+    @State private var fname = ""
+    @State private var lname = ""
+    @State private var shouldShowImagePicker = false
 
     
     
@@ -145,12 +130,19 @@ struct LoginView: View {
             }
             print("Successfully logged in as user: \(result?.user.uid ?? "") " )
             self.loginStatusMesgage = "Successfully logged in as user: \(result?.user.uid ?? "")"
+            
+            self.didCompleteLoginProcess()
         }
     }
     @State var loginStatusMesgage = ""
     
     //FIREBASE LOGIN
     private func createNewAccount(){
+        if self.image == nil{
+            self.loginStatusMesgage = "Select Profile Image"
+                return
+        }
+        
         FirebaseManager.shared.auth.createUser(withEmail: email, password: password)
         { result, err in
             if let err = err{
@@ -205,6 +197,8 @@ struct LoginView: View {
                     return
                 }
                 print ("Success")
+                self.didCompleteLoginProcess()
+                
             }
         
     }
@@ -213,6 +207,8 @@ struct LoginView: View {
 
 struct ContentView_Previews1: PreviewProvider {
     static var previews: some View {
-        LoginView()
+        LoginView(didCompleteLoginProcess: {
+            
+        })
     }
 }

@@ -6,18 +6,95 @@
 //
 
 import SwiftUI
+import SDWebImageSwiftUI
+
+
+
+class MainMessages: ObservableObject{
+    @Published var errorMessage = ""
+    @Published var chatUser: ChatUser?
+    
+    init(){
+        DispatchQueue.main.async {
+            self.isUserCurrentlyLoggedout = FirebaseManager.shared.auth.currentUser?.uid == nil
+        }
+        fetchCurrentUser()
+    }
+     func fetchCurrentUser(){
+        
+        guard let uid = FirebaseManager.shared.auth.currentUser?.uid else{
+            
+            self.errorMessage = "no firebase"
+            return
+        }
+        FirebaseManager.shared.firestore.collection("users")
+            .document(uid).getDocument{ snapshot, error in
+                if let error = error{
+                    self.errorMessage = "Failed to fetch current user:\(error)"
+                    print("Failed to fetch current user:", error)
+                    return
+                }
+                self.errorMessage = "123"
+                guard let data = snapshot?.data() else {
+                    self.errorMessage = "no data found"
+                    return
+                }
+                // self.errorMessage = "Data: \(data.description)"
+                self.chatUser = .init(data: data)
+                
+                
+                
+                // self.errorMessage = chatUser.profileImageurl
+            }
+        
+    }
+    @Published var isUserCurrentlyLoggedout = false
+    func handlesignout(){
+        isUserCurrentlyLoggedout.toggle()
+        try? FirebaseManager.shared.auth.signOut()
+    }
+    
+}
+
 
 struct MainMessagesVC: View {
     
     @State var shouldshowlogout = false
+    @ObservedObject private var vm = MainMessages()
+    
+    var body: some View {
+        NavigationView{
+            VStack {
+//               Text("USER: \(vm.chatUser?.uid ?? "")")
+                // custom nav bar
+                customNavbar
+                // custom message View
+                Messageview
+                
+            }
+            .overlay(
+                newMessageButton, alignment: .bottom)
+            .navigationBarHidden(true)
+        }
+    }
     private var customNavbar: some View{
         HStack(spacing: 16) {
-            
-           Image(systemName: "person.fill")
-                .font(.system(size: 34, weight: .heavy))
+            WebImage(url:URL(string: vm.chatUser?.profileImageurl ?? ""))
+                .resizable()
+                .scaledToFill()
+                .frame(width: 50,height: 50)
+                .clipped()
+                .cornerRadius(50)
+                .overlay (RoundedRectangle (cornerRadius:44)
+                    . stroke(Color(.label), lineWidth: 1)
+                )
+//           Image(systemName: "person.fill")
+//                .font(.system(size: 34, weight: .heavy))
             
             VStack(alignment: .leading, spacing: 4) {
-                Text ("USERNAME" )
+            
+                
+                Text ("\(vm.chatUser?.fname ?? "")" )
                     .font(.system(size: 24, weight: .bold))
                 HStack {
                     Circle()
@@ -45,28 +122,21 @@ struct MainMessagesVC: View {
                     Text ("What do you want to do?"), buttons:[
                         .destructive(Text ("Sign Out"), action: {
                             print ("handle sign out")
+                            vm.handlesignout()
                         }),
                         .cancel()
                         ])
+        
+                }
+        .fullScreenCover(isPresented: $vm.isUserCurrentlyLoggedout, onDismiss: nil){
+            LoginView(didCompleteLoginProcess: {
+                self.vm.isUserCurrentlyLoggedout = false
+                self.vm.fetchCurrentUser()
+            })
+          
         }
-    }
-    
-    
-    var body: some View {
-        NavigationView{
-            VStack {
-           
-           // custom nav bar
-                customNavbar
-            // custom message View
-                Messageview
-                
-            }
-            .overlay(
-                newMessageButton, alignment: .bottom)
-            .navigationBarHidden(true)
-        }
-    }
+   
+}
     
     private var Messageview: some View{
         
@@ -80,7 +150,7 @@ struct MainMessagesVC: View {
                             .overlay (RoundedRectangle (cornerRadius:44)
                                 . stroke(Color(.label), lineWidth: 1)
                             )
-                        
+                            .shadow(radius: 10)
                         VStack(alignment: .leading){
                                 Text("Username")
                                 .font(.system(size: 16, weight: .bold))
@@ -123,5 +193,5 @@ struct MainMessagesVC: View {
 }
 #Preview {
     MainMessagesVC()
-        .preferredColorScheme(.dark)
+       // .preferredColorScheme(.dark)
 }
