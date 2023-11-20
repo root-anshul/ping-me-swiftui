@@ -9,26 +9,31 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 import FirebaseStorage
+import FirebaseFirestore
+
 
 class FirebaseManager: NSObject {
     let auth: Auth
     let storage: Storage
+    let firestore: Firestore
     
     static let shared = FirebaseManager()
     override init() {
         FirebaseApp.configure()
         self.auth = Auth.auth()
         self.storage = Storage.storage()
+        self.firestore = Firestore.firestore()
         super.init()
     }
 }
+
 
 struct LoginView: View {
     @State var isLoginMode = false
     @State var email = ""
     @State var password = ""
-//    @State var fname = ""
-//    @State var lname = ""
+    @State var fname = ""
+    @State var lname = ""
     @State var shouldShowImagePicker = false
 
     
@@ -70,7 +75,14 @@ struct LoginView: View {
                                 .stroke(Color.black, lineWidth:3)
                                       )
                         }
-
+                        Group{
+                            TextField("First Name", text: $fname)
+                                .autocapitalization(.none)
+                            
+                            TextField("Last Name", text: $lname)
+                                .autocapitalization(.none)
+                        }.padding (12)
+                         .background(Color.white)
                     }
                     Group{
                         
@@ -173,10 +185,29 @@ struct LoginView: View {
                     }
                     self.loginStatusMesgage = "Successfully stored image with url: \(url?.absoluteString ?? "")"
                     print(url?.absoluteString)
+                    guard let url = url else {return}
+                    storeUserInformation(imageProfileURL: url)
                 }
                 
             }
         }
+    private func storeUserInformation(imageProfileURL: URL){
+        guard let uid = FirebaseManager.shared.auth.currentUser?.uid else{
+            return}
+        let userData = ["First Name": self.fname, "Last Name": self.lname, "email": self.email, "uid": uid,
+                        "profileImageUrl": imageProfileURL.absoluteString]
+        FirebaseManager.shared.firestore.collection("users")
+            .document(uid).setData(userData) {
+                err in
+                if let err = err{
+                    print (err)
+                    self.loginStatusMesgage = "\(err)"
+                    return
+                }
+                print ("Success")
+            }
+        
+    }
     }
 
 
