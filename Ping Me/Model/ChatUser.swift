@@ -6,7 +6,8 @@
 //
 
 import Foundation
-struct ChatUser{
+struct ChatUser: Identifiable {
+    var id: String { uid }
     let fname,uid, email, profileImageurl: String
    
     init(data: [String: Any]) {

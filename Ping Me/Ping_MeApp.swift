@@ -11,9 +11,10 @@ import SwiftUI
 struct Ping_MeApp: App {
     var body: some Scene {
         WindowGroup {
-            LoginView(didCompleteLoginProcess: {
-                
-            })
+            MainMessagesVC()
+//            LoginView(didCompleteLoginProcess: {
+//                
+//            })
         }
     }
 }

@@ -20,7 +20,7 @@ struct LoginView: View {
     @State private var fname = ""
     @State private var lname = ""
     @State private var shouldShowImagePicker = false
-
+    
     
     
     var body: some View {
@@ -51,14 +51,14 @@ struct LoginView: View {
                                 }
                                 else{
                                     Image(systemName: "person.fill")
-                                    .font(.system(size:64))
-                                    .padding()
-                                    .foregroundColor (Color (.label))
+                                        .font(.system(size:64))
+                                        .padding()
+                                        .foregroundColor (Color (.label))
                                 }
                             }
                             .overlay (RoundedRectangle(cornerRadius: 64)
                                 .stroke(Color.black, lineWidth:3)
-                                      )
+                            )
                         }
                         Group{
                             TextField("First Name", text: $fname)
@@ -67,7 +67,7 @@ struct LoginView: View {
                             TextField("Last Name", text: $lname)
                                 .autocapitalization(.none)
                         }.padding (12)
-                         .background(Color.white)
+                            .background(Color.white)
                     }
                     Group{
                         
@@ -75,12 +75,12 @@ struct LoginView: View {
                         TextField("Email", text: $email)
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
-                            
+                        
                         SecureField("Password", text: $password)
                         
                     }.padding (12)
-                     .background(Color.white)
-            
+                        .background(Color.white)
+                    
                     
                     Button{
                         handleAction()
@@ -90,15 +90,15 @@ struct LoginView: View {
                             Text(isLoginMode ? "Log In" : "Create Account")
                                 .foregroundStyle(.white)
                                 .padding(.vertical, 10)
-                                Spacer()
+                            Spacer()
                                 .font(.system(size: 14, weight: .semibold))
                         }.background(Color.blue)
                     }
-                 
+                    
                 }
                 .padding()
                 
-        }
+            }
             .navigationTitle(isLoginMode ? "Log In" : "Create Account")
             .background(Color(.init(white: 0, alpha: 0.05))
                 .ignoresSafeArea())
@@ -115,8 +115,8 @@ struct LoginView: View {
             loginUser()
         } else{
             createNewAccount()
-                        }
         }
+    }
     
     private func loginUser() {
         
@@ -131,16 +131,18 @@ struct LoginView: View {
             print("Successfully logged in as user: \(result?.user.uid ?? "") " )
             self.loginStatusMesgage = "Successfully logged in as user: \(result?.user.uid ?? "")"
             
-            self.didCompleteLoginProcess()
+           self.didCompleteLoginProcess()
         }
     }
+    
+    
     @State var loginStatusMesgage = ""
     
     //FIREBASE LOGIN
     private func createNewAccount(){
         if self.image == nil{
             self.loginStatusMesgage = "Select Profile Image"
-                return
+            return
         }
         
         FirebaseManager.shared.auth.createUser(withEmail: email, password: password)
@@ -152,11 +154,12 @@ struct LoginView: View {
             print("Successfully user created: \(result?.user.uid ?? "")")
             
             self.loginStatusMesgage = "Successfully created user:\(result?.user.uid ?? "") "
-         
+            
             self.persistImageTostorage()
         }
-       
-        }
+        
+    }
+
         private func persistImageTostorage(){
            // let filename = UUID().uuidString
             guard let uid = FirebaseManager.shared.auth.currentUser?.uid
@@ -207,8 +210,9 @@ struct LoginView: View {
 
 struct ContentView_Previews1: PreviewProvider {
     static var previews: some View {
-        LoginView(didCompleteLoginProcess: {
-            
-        })
+//        LoginView(didCompleteLoginProcess: {
+//            
+//        })
+        MainMessagesVC()
     }
 }
