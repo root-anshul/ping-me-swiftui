@@ -7,8 +7,29 @@
 
 import SwiftUI
 import SDWebImageSwiftUI
+import Firebase
 
-
+struct RecentMessage: Identifiable {
+    var id:String{
+        documentId
+    }
+    
+    let documentId: String
+    let text, email: String
+    let fromId, toId: String
+    let profileImageUrl: String
+    let timestamp: Timestamp
+    
+    init(documentId:String, data:[String:Any]){
+        self.documentId = documentId
+        self.text = data["text"] as? String ?? ""
+        self.fromId = data["fromId"] as? String ?? ""
+        self.toId = data["toId"] as? String ?? ""
+        self.profileImageUrl = data["profileImageurl"] as? String ?? ""
+        self.email = data["email"] as? String ?? ""
+        self.timestamp = data["timestamp"] as? Timestamp ?? Timestamp(date: Date())
+    }
+}
 
 class MainMessages: ObservableObject{
     @Published var errorMessage = ""
@@ -19,7 +40,42 @@ class MainMessages: ObservableObject{
             self.isUserCurrentlyLoggedout = FirebaseManager.shared.auth.currentUser?.uid == nil
         }
         fetchCurrentUser()
+        
+        fetchRecentMessages()
     }
+    @Published var recentMessages = [RecentMessage]()
+    
+    private func fetchRecentMessages(){
+        guard let uid = FirebaseManager.shared.auth.currentUser?.uid else{return}
+        
+        FirebaseManager.shared.firestore
+            .collection("recent_messages")
+            .document(uid)
+            .collection("messages")
+            .order(by: "timestamp")
+            .addSnapshotListener{querySnapshot,error in
+                    if let error = error{
+                        self.errorMessage = "Failed to listen for recent messages\(error)"
+                        print(error)
+                        return
+                    }
+                querySnapshot?.documentChanges.forEach({ change in
+  
+                        let docId = change.document.documentID
+                    if let index = self.recentMessages.firstIndex(where: { rm in
+                        return rm.documentId == docId
+                    }){
+                        self.recentMessages.remove(at: index)
+                    }
+                    self.recentMessages.insert(.init(documentId: docId, data: change.document.data()), at:0)
+                })
+                   
+                }
+                        
+            
+    }
+    
+    
      func fetchCurrentUser(){
         
         guard let uid = FirebaseManager.shared.auth.currentUser?.uid else{
@@ -144,29 +200,35 @@ struct MainMessagesVC: View {
     private var Messageview: some View{
         
         ScrollView{
-            ForEach(0..<10, id: \.self){ num in
+            ForEach(vm.recentMessages){ recentMessage in
                 VStack{
                     NavigationLink {
                         Text("Destination")
                     } label: {
                         HStack(spacing: 16){
-                            Image(systemName: "person.fill")
-                                .font (.system(size: 32))
-                                .padding(8)
-                                .overlay (RoundedRectangle (cornerRadius:44)
-                                    . stroke(Color(.label), lineWidth: 1)
-                                )
-                                .shadow(radius: 10)
-                            VStack(alignment: .leading){
-                                    Text("Username")
+                            WebImage(url: URL(string: recentMessage.profileImageUrl))
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 64,height: 64)
+                                .clipped()
+                                .cornerRadius(64)
+                                .overlay(RoundedRectangle(cornerRadius: 64)
+                                    .stroke(Color.black,lineWidth:1))
+                                .shadow(radius: 5)
+                                
+
+                            VStack(alignment: .leading,spacing: 8){
+                                Text(recentMessage.email)
                                     .font(.system(size: 16, weight: .bold))
-                                    Text("Message sent to user")
+                                    .foregroundColor(Color(.label))
+                                Text(recentMessage.text)
                                     .font (.system(size: 14))
-                                    .foregroundColor (Color(.lightGray))
+                                    .foregroundColor (Color(.darkGray))
+                                    .multilineTextAlignment(.leading)
                                 }
                             
                                 Spacer()
-                                Text("22d")
+//                            Text(recentMessage.timestamp.description)
                                     .font(.system(size: 14, weight: .semibold))
                             }
                     }
